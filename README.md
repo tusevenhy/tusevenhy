@@ -1,112 +1,73 @@
-## About
+[![Packaging status](https://repology.org/badge/tiny-repos/bear-clang.svg)](https://repology.org/project/bear-clang/versions)
+[![GitHub release](https://img.shields.io/github/release/rizsotto/Bear)](https://github.com/rizsotto/Bear/releases)
+[![GitHub Release Date](https://img.shields.io/github/release-date/rizsotto/Bear)](https://github.com/rizsotto/Bear/releases)
+[![Continuous Integration](https://github.com/rizsotto/Bear/workflows/continuous%20integration/badge.svg)](https://github.com/rizsotto/Bear/actions)
+[![Contributors](https://img.shields.io/github/contributors/rizsotto/Bear)](https://github.com/rizsotto/Bear/graphs/contributors)
+[![Gitter](https://img.shields.io/gitter/room/rizsotto/Bear)](https://gitter.im/rizsotto/Bear)
 
-"Yamata No Orochi"<sup>[1]</sup> 
+ʕ·ᴥ·ʔ Build EAR  
+===============
 
-Orochi is a library loading HIP and CUDA APIs dynamically, allowing the user to switch APIs at runtime. Therefore you don't need to compile two separate implementations for each API. This allows you to compile and maintain a single binary that can run on both AMD and NVIDIA GPUs. Unlike HIP, which uses hipamd or CUDA at compile-time, Orochi will dynamically load the corresponding HIP/CUDA shared libraries depending on your platform. In other words, it combines the functionality offered by HIPEW and CUEW into a single library.
+Bear is a tool that generates a compilation database for clang tooling.
 
+The [JSON compilation database][JSONCDB] is used in the clang project
+to provide information on how a single compilation unit is processed.
+With this, it is easy to re-run the compilation with alternate programs.
 
-```mermaid
-graph LR
-    A(User code using <br/> driver API) --> B(Orochi)
-    B --> |AMD GPU|C(HIP <br/> amdhip64.dll)
-    B --> |NVIDIA GPU| D(CUDA <br/> nvcuda.dll)
-```
+Some build system natively supports the generation of JSON compilation
+database. For projects which does not use such build tool, Bear generates
+the JSON file during the build process.
+
+  [JSONCDB]: http://clang.llvm.org/docs/JSONCompilationDatabase.html
+
+How to install
+--------------
+
+Bear is [packaged](https://repology.org/project/bear-clang/versions) for many
+distributions. Check out your package manager. Or [build it](INSTALL.md)
+from source.
+
+How to use
+----------
+
+After installation the usage is like this:
+
+    bear -- <your-build-command>
+
+The output file called `compile_commands.json` is saved in the current directory.
+
+For more options you can check the man page or pass `--help` parameter. Note
+that if you want to pass parameter to Bear, pass those _before_ the `--` sign,
+everything after that will be the build command. 
+
+Please be aware that some package manager still ship our old 2.4.x release. 
+In that case please omit the extra `--` sign or consult your local documentation.
+
+For more, read the man pages or [wiki][WIKI] of the project, which talks about
+limitations, known issues and platform specific usage. 
+
+Problem reports
+---------------
+
+Before you open a new problem report, please look at the [wiki][WIKI] if your
+problem is a known one with documented workaround. It's also helpful to look
+at older (maybe closed) [issues][ISSUES] before you open a new one.  
+
+If you decided to report a problem, try to give as much context as it would
+help me to reproduce the error you see. If you just have a question about the
+usage, please don't be shy, ask your question in an issue or in [chat][CHAT].
+
+If you found a bug, but also found a fix for it, please share it with me and
+open a pull request.
+
+Please follow the [contribution guide][GUIDE] when you do these.
+
+  [ISSUES]: https://github.com/rizsotto/Bear/issues
+  [WIKI]: https://github.com/rizsotto/Bear/wiki
+  [CHAT]: https://gitter.im/rizsotto/Bear
+  [GUIDE]: https://github.com/rizsotto/Bear/blob/master/CONTRIBUTING.md
 
 ---
 
-## Requirement
-
-In order to enable the CUDA backend you need to:
- * Have the CUDA SDK installed ( only the header folder is used by Orochi, at compile-time )
- * Add the CUDA include folder to the Include Directories list of your project.
- * Add the define `OROCHI_ENABLE_CUEW` to your project
-
-For the HIP backend: it's easier as everything needed is embedded in this project, thus you don't need to do anything.
-
-This library doesn't require you to link to CUDA nor HIP at build-time. This provides the benefit that the runtime works even if one of the two drivers, either CUDA or HIP, is installed.
-
-To run an application compiled with Orochi, you need to install a driver of your choice with the corresponding .dll/.so files based on the GPU(s) available. Orochi will automatically link with the corresponding shared library at runtime.
-
----
-
-## SDK multiple versions support
-
-Orochi will aim to maintain support for various version combinations, enabling developers to switch between branches depending on their environment.
-
-Combinations currently supported:
-| HIP version | CUDA version | Branch                                                                                                     | Remarks |
-|-------------|--------------|------------------------------------------------------------------------------------------------------------|----------------------------------------------------------|
-| 5.7         | 12.2         | [release/hip5.7_cuda12.2](https://github.com/GPUOpen-LibrariesAndSDKs/Orochi/tree/release/hip5.7_cuda12.2) | - Tested and validated.<br> - Synchronized with the `main` branch.<br> - Use this one for compatibility with a wider range of machines. |
-| 6.0         | 12.2         | [release/hip6.0_cuda12.2](https://github.com/GPUOpen-LibrariesAndSDKs/Orochi/tree/release/hip6.0_cuda12.2) | - Tested and validated.<br> - HIP Windows DLLs not provided yet.<br> - Use this one to take advantage of the latest HIP features and if you are on machine with HIP 6 driver. |
-
-If you need a combination that is currently not supported, open an [Issue](https://github.com/GPUOpen-LibrariesAndSDKs/Orochi/issues).
-
-----
-
-## API example 
-
-APIs have prefix `oro`. If you are familiar with CUDA or HIP driver APIs, you will get used to Orochi APIs easily.  
-
-For example, suppose we have the following HIP code for device and context creation:
-
-```
-#include <hip/hip_runtime.h>
-
-hipInit( 0 );
-hipDevice device;
-hipDeviceGet( &device, 0 );
-hipCtx ctx;
-hipCtxCreate( &ctx, 0, device );
-
-```
-
-
-The same code can be rewritten using Orochi as:
-
-
-```
-#include <Orochi/Orochi.h>
-
-oroInitialize( ORO_API_HIP, 0 );
-oroInit( 0 );
-oroDevice device;
-oroDeviceGet( &device, 0 );
-oroCtx ctx;
-oroCtxCreate( &ctx, 0, device );
-```
-Which will run on both CUDA and HIP at runtime!
-
-See more in the [sample application](./Test/main.cpp).
-
-----
-
-## Building Sample Application
-
-Run premake. 
-
-```
-./tools/premake5/win/premake5.exe vs2022
-```
-Note: add the option `--precompiled` to enable precompiled bitcode
-
-Test is a minimum application.
-
-### Test Applications
-
-The test applications run on HIP by default. If you want to run on CUDA, run the app with an arg `cuda`. 
-
-The source code for the test applications can be found [here](./Test/).
-
-----
-
-## Contribution
-
-Feel free to open pull requests.
-
-You can either target a specific `release/` branch or the `main` branch.
-
-If it makes sense, your commit will then be propagated in the different `release/` branches by us.
-
-----
-
-[1] Yamata no Orochi (ヤマタノオロチ, 八岐大蛇) is a legendary eight-headed and eight-tailed Japanese dragon.
+Thanks to [JetBrains](https://www.jetbrains.com/?from=Bear)
+for donating product licenses to help develop Bear
