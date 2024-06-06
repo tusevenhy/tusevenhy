@@ -1,7 +1,10 @@
-.idea/
-cmake-build*/
-Output/
-Cargo.lock
-target/
+*.iml
+.gradle
+/local.properties
+/.idea/libraries
+/.idea/modules.xml
+/.idea/workspace.xml
 .DS_Store
-cmake-build-debug/
+/build
+/captures
+.externalNativeBuild
