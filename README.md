@@ -1,1048 +1,218 @@
-<h1><img src="https://raw.githubusercontent.com/aurbano/robinhood-node/master/.github/robinhood-node.png"/></h1>
+# TonY
+[![CircleCI](https://circleci.com/gh/tony-framework/TonY/tree/master.svg?style=svg)](https://circleci.com/gh/tony-framework/TonY/tree/master)
+[![CII Best Practices](https://bestpractices.coreinfrastructure.org/projects/5080/badge)](https://bestpractices.coreinfrastructure.org/projects/5080)
 
-NodeJS Framework to make trades with the private [Robinhood](https://www.robinhood.com/) API. Using this API is not encouraged, since it's not officially available and it has been reverse engineered.
-See @Sanko's [Unofficial Documentation](https://github.com/sanko/Robinhood) for more information.
+![tony-logo-small](https://user-images.githubusercontent.com/544734/57793050-45b3ff00-76f5-11e9-8cc0-8ebb830b6e78.png)
 
-FYI [Robinhood's Terms and Conditions](https://brokerage-static.s3.amazonaws.com/assets/robinhood/legal/Robinhood%20Terms%20and%20Conditions.pdf)
+TonY is a framework to _natively_ run deep learning jobs on [Apache Hadoop](http://hadoop.apache.org/).
+It currently supports [TensorFlow](https://github.com/tensorflow/tensorflow), [PyTorch](https://github.com/pytorch/pytorch), [MXNet](https://github.com/apache/incubator-mxnet) and [Horovod](https://github.com/horovod/horovod).
+TonY enables running either single node or distributed
+training as a Hadoop application. This native connector, together with other TonY features, aims to run
+machine learning jobs reliably and flexibly. For a quick overview of TonY and comparisons to other frameworks, please see
+[this presentation](https://www.slideshare.net/ssuser72f42a/scaling-deep-learning-on-hadoop-at-linkedin).
 
-<!-- toc -->
-  * [Features](#features)
-  * [Installation](#installation)
-  * [Usage](#usage)
-  * [API](#api)
-    * [`auth_token()`](#auth_token)
-    * [`expire_token(callback)`](#expire_token)
-    * [`investment_profile(callback)`](#investment_profilecallback)
-    * [`instruments(symbol, callback)`](#instrumentssymbol-callback)
-    * [`quote_data(stock, callback) // Not authenticated`](#quote_datastock-callback--not-authenticated)
-    * [`accounts(callback)`](#accountscallback)
-    * [`user(callback)`](#usercallback)
-    * [`dividends(callback)`](#dividendscallback)
-    * [`earnings(option, callback)`](#earningsoption-callback)
-    * [`orders(options, callback)`](#ordersoptions-callback)
-    * [`positions(callback)`](#positionscallback)
-    * [`nonzero_positions(callback)`](#nonzero_positionscallback)
-    * [`place_buy_order(options, callback)`](#place_buy_orderoptions-callback)
-      * [`trigger`](#trigger)
-      * [`time`](#time)
-    * [`place_sell_order(options, callback)`](#place_sell_orderoptions-callback)
-      * [`trigger`](#trigger)
-      * [`time`](#time)
-    * [`fundamentals(symbol, callback)`](#fundamentalssymbol-callback)
-      * [Response](#response)
-    * [`cancel_order(order, callback)`](#cancel_orderorder-callback)
-    * [`watchlists(name, callback)`](#watchlistsname-callback)
-    * [`create_watch_list(name, callback)`](#create_watch_listname-callback)
-    * [`sp500_up(callback)`](#sp500_upcallback)
-    * [`sp500_down(callback)`](#sp500_downcallback)
-    * [`splits(instrument, callback)`](#splitsinstrument-callback)
-    * [`historicals(symbol, intv, span, callback)`](#historicalssymbol-intv-span-callback)
-    * [`url(url, callback)`](#urlurl-callback)
-    * [`news(symbol, callback)`](#newssymbol-callback)
-    * [`tag(tag, callback)`](#tagtag-callback)
-    * [`popularity(symbol, callback)`](#popularitysymbol-callback)
-    * [`options_positions`](#options_positions)
-    * [`get_currency_pairs`](#get_currency_pairs)
-    * [`get_crypto`](#get_crypto)
-    * [`options_orders`](#options_orders)
-* [Contributors](#contributors)
+## Compatibility Notes
 
-<!-- toc stop -->
-## Features
-* Quote Data
-* Buy, Sell Orders
-* Daily Fundamentals
-* Daily, Weekly, Monthly Historicals
+TonY itself is compatible with [Hadoop 2.6.0](https://hadoop.apache.org/docs/r2.6.0/) (CDH5.11.0) and above. If you need GPU isolation from TonY, you need [Hadoop 2.10](https://hadoop.apache.org/docs/r2.10.0/) or higher for Hadoop 2, or [Hadoop 3.1.0](https://hortonworks.com/blog/gpus-support-in-apache-hadoop-3-1-yarn-hdp-3/) or higher for Hadoop 3.
 
-> Tested on the latest versions of Node 6, 7 & 8.
+## Build
 
-## Installation
-```bash
-$ npm install robinhood --save
-```
+TonY is built using [Gradle](https://github.com/gradle/gradle). To build TonY, run:
+
+    ./gradlew build
+
+This will automatically run tests, if want to build without running tests, run:
+
+    ./gradlew build -x test
+
+The jar required to run TonY will be located in `./tony-cli/build/libs/`.
 
 ## Usage
 
-To authenticate, you can either use your username and password to the Robinhood app or a previously authenticated Robinhood api token:
-
-### Robinhood API Auth Token
-```js
-//A previously authenticated Robinhood API auth token
-
-var credentials = {
-    token: ''
-};
-```
-
-```js
-var Robinhood = require('robinhood')(credentials, function(err, data){
-
-    //Robinhood is connected and you may begin sending commands to the api.
-
-    Robinhood.quote_data('GOOG', function(error, response, body) {
-        if (error) {
-            console.error(error);
-            process.exit(1);
-        }
-        console.log(body);
-    });
-
-});
-```
-
-### Username & Password
-
-This type of login may have been deprecated in favor of the API Token above.
-
-```js
-//The username and password you use to sign into the robinhood app.
-
-var credentials = {
-    username: '',
-    password: ''
-};
-```
-
-### MFA code
-
-```js
-
-var Robinhood = robinhood({
-        username : '',
-        password : ''
-    }, (err, data) => {
-        if(err) {
-            console.log(err);
-        } else {
-            if (data && data.mfa_required) {
-            var mfa_code = '123456'; // set mfa_code here
-
-            Robinhood.set_mfa_code(mfa_code, () => {
-                console.log(Robinhood.auth_token());
-            });
-            }
-            else {
-                console.log(Robinhood.auth_token());
-            }
-        }
-    });
-```
-
-
-
-## API
-
-Before using these methods, make sure you have initialized Robinhood using the snippet above.
-
-### `auth_token()`
-Get the current authenticated Robinhood api authentication token
-
-```typescript
-var credentials = require("../credentials.js")();
-var Robinhood = require('robinhood')(credentials, function(err, data){
-    console.log(Robinhood.auth_token());
-        //      <authenticated alphanumeric token>
-}
-```
-
-### `expire_token()`
-Expire the current authenticated Robinhood api token (logout).
-
-> **NOTE:** After expiring a token you will need to reinstantiate the package with username & password in order to get a new token!
-
-```typescript
-var credentials = require("../credentials.js")();
-var Robinhood = require('robinhood')(credentials, function(err, data){
-    Robinhood.expire_token(function(err, response, body){
-        if(err){
-            console.error(err);
-        }else{
-            console.log("Successfully logged out of Robinhood and expired token.");
-            // NOTE: body is undefined on the callback
-        }
-    })
-});
-```
-
-### `investment_profile(callback)`
-Get the current user's investment profile.
-
-```typescript
-var credentials = require("../credentials.js")();
-var Robinhood = require('robinhood')(credentials, function(err, data){
-    Robinhood.investment_profile(function(err, response, body){
-        if(err){
-            console.error(err);
-        }else{
-            console.log("investment_profile");
-            console.log(body);
-                //    { annual_income: '25000_39999',
-                //      investment_experience: 'no_investment_exp',
-                //      updated_at: '2015-06-24T17:14:53.593009Z',
-                //      risk_tolerance: 'low_risk_tolerance',
-                //      total_net_worth: '0_24999',
-                //      liquidity_needs: 'very_important_liq_need',
-                //      investment_objective: 'income_invest_obj',
-                //      source_of_funds: 'savings_personal_income',
-                //      user: 'https://api.robinhood.com/user/',
-                //      suitability_verified: true,
-                //      tax_bracket: '',
-                //      time_horizon: 'short_time_horizon',
-                //      liquid_net_worth: '0_24999' }
-
-        }
-    })
-});
-```
-
-
-### `instruments(symbol, callback)`
-
-```typescript
-var credentials = require("../credentials.js")();
-var Robinhood = require('robinhood')(credentials, function(err, data){
-    Robinhood.instruments('AAPL',function(err, response, body){
-        if(err){
-            console.error(err);
-        }else{
-            console.log("instruments");
-            console.log(body);
-            //    { previous: null,
-            //      results:
-            //       [ { min_tick_size: null,
-            //           splits: 'https://api.robinhood.com/instruments/450dfc6d-5510-4d40-abfb-f633b7d9be3e/splits/',
-            //           margin_initial_ratio: '0.5000',
-            //           url: 'https://api.robinhood.com/instruments/450dfc6d-5510-4d40-abfb-f633b7d9be3e/',
-            //           quote: 'https://api.robinhood.com/quotes/AAPL/',
-            //           symbol: 'AAPL',
-            //           bloomberg_unique: 'EQ0010169500001000',
-            //           list_date: '1990-01-02',
-            //           fundamentals: 'https://api.robinhood.com/fundamentals/AAPL/',
-            //           state: 'active',
-            //           day_trade_ratio: '0.2500',
-            //           tradeable: true,
-            //           maintenance_ratio: '0.2500',
-            //           id: '450dfc6d-5510-4d40-abfb-f633b7d9be3e',
-            //           market: 'https://api.robinhood.com/markets/XNAS/',
-            //           name: 'Apple Inc. - Common Stock' } ],
-            //      next: null }
-        }
-    })
-});
-```
-
-
-Get the user's instruments for a specified stock.
-
-### `quote_data(stock, callback) // Not authenticated`
-
-Get the user's quote data for a specified stock.
-
-```js
-var Robinhood = require('robinhood')(credentials, function(err, data){
-    Robinhood.quote_data('AAPL', function(err, response, body){
-        if(err){
-            console.error(err);
-        }else{
-            console.log("quote_data");
-            console.log(body);
-            //{
-            //    results: [
-            //        {
-            //            ask_price: String, // Float number in a String, e.g. '735.7800'
-            //            ask_size: Number, // Integer
-            //            bid_price: String, // Float number in a String, e.g. '731.5000'
-            //            bid_size: Number, // Integer
-            //            last_trade_price: String, // Float number in a String, e.g. '726.3900'
-            //            last_extended_hours_trade_price: String, // Float number in a String, e.g. '735.7500'
-            //            previous_close: String, // Float number in a String, e.g. '743.6200'
-            //            adjusted_previous_close: String, // Float number in a String, e.g. '743.6200'
-            //            previous_close_date: String, // YYYY-MM-DD e.g. '2016-01-06'
-            //            symbol: String, // e.g. 'AAPL'
-            //            trading_halted: Boolean,
-            //            updated_at: String, // YYYY-MM-DDTHH:MM:SS e.g. '2016-01-07T21:00:00Z'
-            //        }
-            //    ]
-            //}
-        }
-    })
-});
-```
-
-### `accounts(callback)`
-
-```typescript
-var Robinhood = require('robinhood')(credentials, function(err, data){
-    Robinhood.accounts(function(err, response, body){
-        if(err){
-            console.error(err);
-        }else{
-            console.log("accounts");
-            console.log(body);
-            //{ previous: null,
-            //  results:
-            //   [ { deactivated: false,
-            //       updated_at: '2016-03-11T20:37:15.971253Z',
-            //       margin_balances: [Object],
-            //       portfolio: 'https://api.robinhood.com/accounts/asdf/portfolio/',
-            //       cash_balances: null,
-            //       withdrawal_halted: false,
-            //       cash_available_for_withdrawal: '692006.6600',
-            //       type: 'margin',
-            //       sma: '692006.6600',
-            //       sweep_enabled: false,
-            //       deposit_halted: false,
-            //       buying_power: '692006.6600',
-            //       user: 'https://api.robinhood.com/user/',
-            //       max_ach_early_access_amount: '1000.00',
-            //       cash_held_for_orders: '0.0000',
-            //       only_position_closing_trades: false,
-            //       url: 'https://api.robinhood.com/accounts/asdf/',
-            //       positions: 'https://api.robinhood.com/accounts/asdf/positions/',
-            //       created_at: '2015-06-17T14:53:36.928233Z',
-            //       cash: '692006.6600',
-            //       sma_held_for_orders: '0.0000',
-            //       account_number: 'asdf',
-            //       uncleared_deposits: '0.0000',
-            //       unsettled_funds: '0.0000' } ],
-            //  next: null }
-        }
-    })
-});
-```
-
-
-Get the user's accounts.
-
-### `user(callback)`
-Get the user information.
-
-```typescript
-var Robinhood = require('robinhood')(credentials, function(err, data){
-    Robinhood.user(function(err, response, body){
-        if(err){
-            console.error(err);
-        }else{
-            console.log("user");
-            console.log(body);
-        }
-    })
-});
-```
-
-### `dividends(callback)`
-
-Get the user's dividends information.
-```typescript
-var Robinhood = require('robinhood')(credentials, function(err, data){
-    Robinhood.dividends(function(err, response, body){
-        if(err){
-            console.error(err);
-        }else{
-            console.log("dividends");
-            console.log(body);
-        }
-    })
-});
-```
-
-### `earnings(option, callback)`
-
-Get the earnings information. Option should be one of:
-
-```typescript
-let option = { range: X } // X is an integer between 1 and 21. This returns all
-                          // expected earnings within a number of calendar days.
-```
-OR
-```typescript
-let option = { instrument: URL } // URL is full instrument url.
-```
-OR
-```typescript
-let option = { symbol: SYMBOL } // SYMBOL is a plain ol' ticker symbol.
-```
-
-```typescript
-var Robinhood = require('robinhood')(credentials, function(err, data){
-    Robinhood.earnings(option, function(err, response, body){
-        if(err){
-            console.error(err);
-        }else{
-            console.log("earnings");
-            console.log(body);
-        }
-    })
-});
-```
-
-
-### `orders(options, callback)`
-
-Get the user's orders information.
-
-#### Retreive a set of orders
-Send options hash (optional) to limit to specific instrument and/or earliest date of orders.
-
-```typescript
-// optional options hash.  If no hash is sent, all orders will be returned.
-let options = {
-    updated_at: '2017-08-25',
-    instrument: 'https://api.robinhood.com/instruments/df6c09dc-bb4f-4495-8c59-f13e6eb3641f/'
-}
-```
-
-```typescript
-var Robinhood = require('robinhood')(credentials, function(err, data){
-    Robinhood.orders(options, function(err, response, body){
-        if(err){
-            console.error(err);
-        }else{
-            console.log("orders");
-            console.log(body);
-        }
-    })
-});
-```
-
-#### Retreive a particular order
-Send the id of the order to retreive the data for a specific order.
-```typescript
-let order_id = "string_identifier"; // e.g., id: 'aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa',
-```
-
-```typescript
-var Robinhood = require('robinhood')(credentials, function(err, data){
-    Robinhood.orders(order_id, function(err, response, body){
-        if(err){
-            console.error(err);
-        }else{
-            console.log("order");
-            console.log(body);
-        }
-    })
-});
-```
-
-### `positions(callback)`
-
-Get the user's position information.
-```typescript
-var Robinhood = require('robinhood')(credentials, function(err, data){
-    Robinhood.positions(function(err, response, body){
-        if (err){
-            console.error(err);
-        }else{
-            console.log("positions");
-            console.log(body);
-        }
-    });
-});
-```
-
-### `nonzero_positions(callback)`
-
-Get the user's nonzero position information only.
-```typescript
-var Robinhood = require('robinhood')(credentials, function(err, data){
-    Robinhood.nonzero_positions(function(err, response, body){
-        if (err){
-            console.error(err);
-        }else{
-            console.log("positions");
-            console.log(body);
-        }
-    });
-});
-```
-
-### `place_buy_order(options, callback)`
-
-Place a buy order on a specified stock.
-
-```js
-var Robinhood = require('robinhood')(credentials, function(err, data){
-    var options = {
-        type: 'limit',
-        quantity: 1,
-        bid_price: 1.00,
-        instrument: {
-            url: String,
-            symbol: String
-        }
-        // // Optional:
-        // trigger: String, // Defaults to "gfd" (Good For Day)
-        // time: String,    // Defaults to "immediate"
-        // type: String     // Defaults to "market"
-    }
-    Robinhood.place_buy_order(options, function(error, response, body){
-        if(error){
-            console.error(error);
-        }else{
-            console.log(body);
-        }
-    })
-});
-```
-
-For the Optional ones, the values can be:
-
-*[Disclaimer: This is an unofficial API based on reverse engineering, and the following option values have not been confirmed]*
-
-#### `trigger`
-
-A *[trade trigger](http://www.investopedia.com/terms/t/trade-trigger.asp)* is usually a market condition, such as a rise or fall in the price of an index or security.
-
-Values can be:
-
-* `gfd`: Good For Day
-* `gtc`: Good Till Cancelled
-* `oco`: Order Cancels Other
-
-#### `time`
-
-The *[time in force](http://www.investopedia.com/terms/t/timeinforce.asp?layout=infini&v=3A)* for an order defines the length of time over which an order will continue working before it is canceled.
-
-Values can be:
-
-* `immediate` : The order will be cancelled unless it is fulfilled immediately.
-* `day` : The order will be cancelled at the end of the trading day.
-
-### `place_sell_order(options, callback)`
-
-Place a sell order on a specified stock.
-
-```js
-
-var Robinhood = require('robinhood')(credentials, function(err, data){
-    var options = {
-        type: 'limit',
-        quantity: 1,
-        bid_price: 1.00,
-        instrument: {
-            url: String,
-            symbol: String
-        },
-        // // Optional:
-        // trigger: String, // Defaults to "gfd" (Good For Day)
-        // time: String,    // Defaults to "immediate"
-        // type: String     // Defaults to "market"
-    }
-    Robinhood.place_sell_order(options, function(error, response, body){
-        if(error){
-            console.error(error);
-        }else{
-            console.log(body);
-        }
-    })
-});
-
-```
-
-For the Optional ones, the values can be:
-
-*[Disclaimer: This is an unofficial API based on reverse engineering, and the following option values have not been confirmed]*
-
-#### `trigger`
-
-A *[trade trigger](http://www.investopedia.com/terms/t/trade-trigger.asp)* is usually a market condition, such as a rise or fall in the price of an index or security.
-
-Values can be:
-
-* `gfd`: Good For Day
-* `gtc`: Good Till Cancelled
-* `oco`: Order Cancels Other
-
-#### `time`
-
-The *[time in force](http://www.investopedia.com/terms/t/timeinforce.asp?layout=infini&v=3A)* for an order defines the length of time over which an order will continue working before it is canceled.
-
-Values can be:
-
-* `immediate` : The order will be cancelled unless it is fulfilled immediately.
-* `day` : The order will be cancelled at the end of the trading day.
-
-### `fundamentals(symbol, callback)`
-
-Get fundamental data about a symbol.
-
-#### Response
-
-An object containing information about the symbol:
-
-```typescript
-var Robinhood = require('robinhood')(credentials, function(err, data){
-    Robinhood.fundamentals("SBPH", function(error, response, body){
-        if(error){
-            console.error(error);
-        }else{
-            console.log(body);
-            //{                               // Example for SBPH
-            //    average_volume: string,     // "14381.0215"
-            //    description: string,        // "Spring Bank Pharmaceuticals, Inc. [...]"
-            //    dividend_yield: string,     // "0.0000"
-            //    high: string,               // "12.5300"
-            //    high_52_weeks: string,      // "13.2500"
-            //    instrument: string,         // "https://api.robinhood.com/instruments/42e07e3a-ca7a-4abc-8c23-de49cb657c62/"
-            //    low: string,                // "11.8000"
-            //    low_52_weeks: string,       // "7.6160"
-            //    market_cap: string,         // "94799500.0000"
-            //    open: string,               // "12.5300"
-            //    pe_ratio: string,           // null (price/earnings ratio)
-            //    volume: string              // "4119.0000"
-            //}
-        }
-    })
-});
-
-
-```
-
-### `cancel_order(order, callback)`
-
-Cancel an order with the order object
-```typescript
-var Robinhood = require('robinhood')(credentials, function(err, data){
-    //Get list of orders
-    Robinhood.orders(function(error, response, body){
-        if(error){
-            console.error(error);
-        }else{
-            var orderToCancel = body.results[0];
-            //Try to cancel the latest order
-            Robinhood.cancel_order(orderToCancel, function(err, response, body){
-                if(err){
-                    //Error
-
-                    console.error(err);     // { message: 'Order cannot be cancelled.', order: {Order} }
-                }else{
-                    //Success
-
-                    console.log("Cancel Order Successful");
-                    console.log(body)       //{}
-                }
-            })
-        }
-    })
-})
-```
-
-Cancel an order by order id
-
-```typescript
-var order_id = 'xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx'
-var Robinhood = require('robinhood')(credentials, function(err, data){
-        Robinhood.cancel_order(order_id, function(err, response, body){
-            if(err){
-                //Error
-                console.error(err);     // { message: 'Order cannot be cancelled.', order: {Order} }
-            }else{
-                //Success
-                console.log("Cancel Order Successful");
-                console.log(body)       //{}
-            }
-        })
-})
-```
-
-### `watchlists(name, callback)`
-```typescript
-var Robinhood = require('robinhood')(credentials, function(err, data){
-    Robinhood.watchlists(function(err, response, body){
-        if(err){
-            console.error(err);
-        }else{
-            console.log("got watchlists");
-            console.log(body);
-
-            //{ previous: null,
-            //  results:
-            //   [ { url: 'https://api.robinhood.com/watchlists/Default/',
-            //       user: 'https://api.robinhood.com/user/',
-            //      name: 'Default' } ],
-            //  next: null }
-        }
-    })
-});
-```
-
-### `create_watch_list(name, callback)`
-```
-//Your account type must support multiple watchlists to use this endpoint otherwise will get { detail: 'Request was throttled.' } and watchlist is not created.
-Robinhood.create_watch_list('Technology', function(err, response, body){
-    if(err){
-        console.error(err);
-    }else{
-        console.log("created watchlist");
-        console.log(body);
-    //    {
-    //        "url": "https://api.robinhood.com/watchlists/Technology/",
-    //        "user": "https://api.robinhood.com/user/",
-    //        "name": "Technology"
-    //    }
-
-    }
-})
-```
-
-### `sp500_up(callback)`
-```typescript
-var Robinhood = require('robinhood')(credentials, function(err, data){
-    Robinhood.sp500_up(function(err, response, body){
-        if(err){
-            console.error(err);
-        }else{
-            console.log("sp500_up");
-            console.log(body);
-            //{ count: 10,
-            //  next: null,
-            //  previous: null,
-            //  results:
-            //   [ { instrument_url: 'https://api.robinhood.com/instruments/adbc3ce0-dd0d-4a7a-92e0-88c1f127cbcb/',
-            //       symbol: 'NEM',
-            //       updated_at: '2016-09-21T13:03:32.310184Z',
-            //       price_movement: [{ market_hours_last_movement_pct: '7.55', market_hours_last_price: '41.0300' }],
-            //       description: 'Newmont Mining Corp. is a gold producer, which is engaged in the acquisition, exploration and production of gold and copper properties in U.S., Australia, Peru, Indonesia, Ghana, Canada, New Zealand and Mexico. The company\'s operating segments include North America, South America, Asia Pacific and Africa. The North America segment consists of Nevada in the United States, La Herradura in Mexico and Hope Bay in Canada. The South America segment consists of Yanacocha and Conga in Peru. The Asia Pacific segment consists of Boddington in Australia, Batu Hijau in Indonesia and other smaller operations in Australia and New Zealand. The Africa segment consists of Ahafo and Akyem in Ghana. The company was founded by William Boyce Thompson on May 2, 1921 and is headquartered in Greenwood Village, CO.' },
-            //     { instrument_url: 'https://api.robinhood.com/instruments/809adc21-ef75-4c3d-9c0e-5f9a167f235b/',
-            //       symbol: 'ADBE',
-            //       updated_at: '2016-09-21T13:01:31.748590Z',
-            //       price_movement: [{ market_hours_last_movement_pct: '7.55', market_hours_last_price: '41.0300' }],
-            //       description: 'Adobe Systems, Inc. provides digital marketing and digital media solutions. The company operates its business through three segments: Digital Media, Digital Marketing, and Print and Publishing. The Digital Media segment offers creative cloud services, which allow members to download and install the latest versions of products, such as Adobe Photoshop, Adobe Illustrator, Adobe Premiere Pro, Adobe Photoshop Lightroom and Adobe InDesign, as well as utilize other tools, such as Adobe Acrobat. This segment also offers other tools and services, including hobbyist products, such as Adobe Photoshop Elements and Adobe Premiere Elements, Adobe Digital Publishing Suite, Adobe PhoneGap, Adobe Typekit, as well as mobile apps, such as Adobe Photoshop Mix, Adobe Photoshop Sketch and Adobe Premiere Clip that run on tablets and mobile devices. The Digital Media serves professionals, including graphic designers, production artists, web designers and developers, user interface designers, videographers, motion graphic artists, prepress professionals, video game developers, mobile application developers, students and administrators. The Digital Marketing segment offers various solutions, including analytics, social marketing, targeting, media optimization, digital experience management and cross-channel campaign management, as well as premium video delivery and monetization. This segment also offers legacy enterprise software, such as Adobe Connect web conferencing platform and Adobe LiveCycle. The Print and Publishing segment offers legacy products and services for eLearning solutions, technical document publishing, web application development and high-end printing. Adobe Systems was founded by Charles M. Geschke and John E. Warnock in December 1982 and is headquartered in San Jose, CA.' }
-            //    ]
-            //}
-        }
-    })
-});
-```
-
-### `sp500_down(callback)`
-```typescript
-var Robinhood = require('robinhood')(credentials, function(err, data){
-    Robinhood.sp500_down(function(err, response, body){
-        if(err){
-            console.error(err);
-        }else{
-            console.log("sp500_down");
-            console.log(body);
-            //{ count: 10,
-            //  next: null,
-            //  previous: null,
-            //  results:
-            //   [ { instrument_url: 'https://api.robinhood.com/instruments/adbc3ce0-dd0d-4a7a-92e0-88c1f127cbcb/',
-            //       symbol: 'NEM',
-            //       updated_at: '2016-09-21T13:03:32.310184Z',
-            //       price_movement: [{ market_hours_last_movement_pct: '-3.70', market_hours_last_price: '13.2800' }],
-            //      description: 'Newmont Mining Corp. is a gold producer, which is engaged in the acquisition, exploration and production of gold and copper properties in U.S., Australia, Peru, Indonesia, Ghana, Canada, New Zealand and Mexico. The company\'s operating segments include North America, South America, Asia Pacific and Africa. The North America segment consists of Nevada in the United States, La Herradura in Mexico and Hope Bay in Canada. The South America segment consists of Yanacocha and Conga in Peru. The Asia Pacific segment consists of Boddington in Australia, Batu Hijau in Indonesia and other smaller operations in Australia and New Zealand. The Africa segment consists of Ahafo and Akyem in Ghana. The company was founded by William Boyce Thompson on May 2, 1921 and is headquartered in Greenwood Village, CO.' },
-            //     { instrument_url: 'https://api.robinhood.com/instruments/809adc21-ef75-4c3d-9c0e-5f9a167f235b/',
-            //       symbol: 'ADBE',
-            //       updated_at: '2016-09-21T13:01:31.748590Z',
-            //       price_movement: [{ market_hours_last_movement_pct: '-3.70', market_hours_last_price: '13.2800' }],
-            //       description: 'Adobe Systems, Inc. provides digital marketing and digital media solutions. The company operates its business through three segments: Digital Media, Digital Marketing, and Print and Publishing. The Digital Media segment offers creative cloud services, which allow members to download and install the latest versions of products, such as Adobe Photoshop, Adobe Illustrator, Adobe Premiere Pro, Adobe Photoshop Lightroom and Adobe InDesign, as well as utilize other tools, such as Adobe Acrobat. This segment also offers other tools and services, including hobbyist products, such as Adobe Photoshop Elements and Adobe Premiere Elements, Adobe Digital Publishing Suite, Adobe PhoneGap, Adobe Typekit, as well as mobile apps, such as Adobe Photoshop Mix, Adobe Photoshop Sketch and Adobe Premiere Clip that run on tablets and mobile devices. The Digital Media serves professionals, including graphic designers, production artists, web designers and developers, user interface designers, videographers, motion graphic artists, prepress professionals, video game developers, mobile application developers, students and administrators. The Digital Marketing segment offers various solutions, including analytics, social marketing, targeting, media optimization, digital experience management and cross-channel campaign management, as well as premium video delivery and monetization. This segment also offers legacy enterprise software, such as Adobe Connect web conferencing platform and Adobe LiveCycle. The Print and Publishing segment offers legacy products and services for eLearning solutions, technical document publishing, web application development and high-end printing. Adobe Systems was founded by Charles M. Geschke and John E. Warnock in December 1982 and is headquartered in San Jose, CA.' }
-            //    ]
-            //}
-
-        }
-    })
-});
-```
-### `splits(instrument, callback)`
-
-```typescript
-var Robinhood = require('robinhood')(credentials, function(err, data){
-
-    Robinhood.splits("7a3a677d-1664-44a0-a94b-3bb3d64f9e20", function(err, response, body){
-        if(err){
-            console.error(err);
-        }else{
-            console.log("got splits");
-            console.log(body);   //{ previous: null, results: [], next: null }
-        }
-    })
-})
-```
-
-### `historicals(symbol, intv, span, callback)`
-
-```typescript
-var Robinhood = require('robinhood')(credentials, function(err, data){
-
-    //{interval=5minute|10minute (required) span=week|day| }
-
-    Robinhood.historicals("AAPL", '5minute', 'week', function(err, response, body){
-        if(err){
-            console.error(err);
-        }else{
-            console.log("got historicals");
-            console.log(body);
-            //
-            //    { quote: 'https://api.robinhood.com/quotes/AAPL/',
-            //      symbol: 'AAPL',
-            //      interval: '5minute',
-            //      span: 'week',
-            //      bounds: 'regular',
-            //      previous_close: null,
-            //      historicals:
-            //       [ { begins_at: '2016-09-15T13:30:00Z',
-            //           open_price: '113.8300',
-            //           close_price: '114.1700',
-            //           high_price: '114.3500',
-            //           low_price: '113.5600',
-            //           volume: 3828122,
-            //           session: 'reg',
-            //           interpolated: false },
-            //         { begins_at: '2016-09-15T13:35:00Z',
-            //           open_price: '114.1600',
-            //           close_price: '114.3800',
-            //           high_price: '114.7300',
-            //           low_price: '114.1600',
-            //           volume: 2166098,
-            //           session: 'reg',
-            //           interpolated: false },
-            //         ... 290 more items
-            //      ]}
-            //
-        }
-    })
-})
-```
-
-### `url(url, callback)`
-
-`url` is used to get continued or paginated data from the API. Queries with long results return a reference to the next sete. Example -
-
-```
-next: 'https://api.robinhood.com/orders/?cursor=cD0yMD82LTA0LTAzKzkwJVNCNTclM0ExNC45MzYyKDYlMkIwoCUzqtAW' }
-```
-
-The url returned can be passed to the `url` method to continue getting the next set of results.
-
-### `tag(tag, callback)`
-
-Retrieve Robinhood's new Tags: In 2018, Robinhood Web will expose more Social and Informational tools.
-You'll see how popular a security is with other Robinhood users, MorningStar ratings, etc.
-
-Known tags:
-
-* 10 Most Popular Instruments: `10-most-popular`
-* 100 Most Popular Instruments: `100-most-popular`
-
-Response sample:
-
-```typescript
-{
-   "slug":"10-most-popular",
-   "name":"10 Most Popular",
-   "description":"",
-   "instruments":[
-      "https://api.robinhood.com/instruments/6df56bd0-0bf2-44ab-8875-f94fd8526942/",
-      "https://api.robinhood.com/instruments/50810c35-d215-4866-9758-0ada4ac79ffa/",
-      "https://api.robinhood.com/instruments/450dfc6d-5510-4d40-abfb-f633b7d9be3e/",
-      "https://api.robinhood.com/instruments/e39ed23a-7bd1-4587-b060-71988d9ef483/",
-      "https://api.robinhood.com/instruments/1e513292-5926-4dc4-8c3d-4af6b5836704/",
-      "https://api.robinhood.com/instruments/39ff611b-84e7-425b-bfb8-6fe2a983fcf3/",
-      "https://api.robinhood.com/instruments/ebab2398-028d-4939-9f1d-13bf38f81c50/",
-      "https://api.robinhood.com/instruments/940fc3f5-1db5-4fed-b452-f3a2e4562b5f/",
-      "https://api.robinhood.com/instruments/c74a93bc-58f3-4ccb-b4e3-30c65e2f88c8/",
-      "https://api.robinhood.com/instruments/fdf46795-2a81-4506-880f-514c8010c163/"
-   ]
-}
-```
-
-### `popularity(symbol, callback)`
-
-Get the popularity for a specified stock.
-
-
-```typescript
-var credentials = require("../credentials.js")();
-var Robinhood = require('robinhood')(credentials, function() {
-    Robinhood.popularity('GOOG', function(error, response, body) {
-        if (error) {
-            console.error(error);
-        } else {
-            console.log(body);
-            // {
-            //    instrument: 'https://api.robinhood.com/instruments/943c5009-a0bb-4665-8cf4-a95dab5874e4/',
-            //    num_open_positions: 16319
-            // }
-        }
-    });
-});
-```
-
-### `options_positions`
-
-Obtain list of options positions
-
-```typescript
-var credentials = require("../credentials.js")();
-var Robinhood = require('robinhood')(credentials, function() {
-    Robinhood.options_positions((err, response, body) => {
-        if (err) {
-            console.error(err);
-        } else {
-            console.log(body);
-        }
-    });
-});
-
-// {
-//   "created_at": "2018-10-12T17:05:18.195533Z",
-//   "direction": "credit",
-//   "intraday_quantity": "35.0000",
-//   "average_open_price": "56.5143",
-//   "chain": "https://api.robinhood.com/options/chains/103ce21e-4921-47ed-a263-e05d2d3d5e99/",
-//   "updated_at": "2018-10-12T19:11:02.984831Z",
-//   "symbol": "XLF",
-//   "trade_value_multiplier": "100.0000",
-//   "intraday_direction": "credit",
-//   "strategy": "short_put",
-//   "intraday_average_open_price": "56.5143",
-//   "legs": [
-//     {
-//       "strike_price": "26.5000",
-//       "option": "https://api.robinhood.com/options/instruments/fa512b6e-c121-4ff4-b8aa-9aa2974514b7/",
-//       "expiration_date": "2018-10-19",
-//       "option_type": "put",
-//       "id": "214e0f90-4416-427a-b119-e1a96d8e9da7",
-//       "position_type": "short",
-//       "position": "https://api.robinhood.com/options/positions/e18fda89-6ff2-443f-af71-cd780e558049/",
-//       "ratio_quantity": 1
-//     }
-//   ],
-//   "id": "e4e6cabe-2328-42f3-b4d9-d78da695d2ec",
-//   "quantity": "35.0000"
-// }
-
-```
-
-### `options_orders`
-
-Obtain list of history of option orders
-
-```typescript
-var credentials = require("../credentials.js")();
-var Robinhood = require('robinhood')(credentials, function() {
-    Robinhood.options_orders((err, response, body) => {
-        if (err) {
-            console.error(err);
-        } else {
-            console.log(body);
-        }
-    });
-});
-```
-
-### `options_dates`
-
-Obtain list of options expirations for a ticker
-
-```typescript
-var credentials = require("../credentials.js")();
-var Robinhood = require('robinhood')(credentials, function() {
-    Robinhood.options_positions("MSFT", (err, response, {tradable_chain_id, expiration_dates}) => {
-        if (err) {
-            console.error(err);
-        } else {
-            // Expiration dates is [<Date String>] ordered by asc date ([0] would be more recent than [1])
-            Robinhood.options_available(tradable_chain_id, expiration_dates[0])
-        }
-    });
-});
-```
-### `options_available`
-
-Obtain list of options expirations for a ticker
-
-```typescript
-var credentials = require("../credentials.js")();
-var Robinhood = require('robinhood')(credentials, function() {
-    Robinhood.options_positions("MSFT", (err, response, {tradable_chain_id, expiration_dates}) => {
-        if (err) {
-            console.error(err);
-        } else {
-            // Expiration dates is an array of date strings ordered by asc date ([0] would be more recent than [1])
-            // Tradable_chain_id respresents the options identifier for a ticker
-            Robinhood.options_available(tradable_chain_id, expiration_dates[0])
-        }
-    });
-});
-```
-
-### news(symbol, callback)
-
-Return news about a symbol.
-
-### `get_currency_pairs`
-
-Get crypto - currency pairs
-
-```javascript
-var credentials = require("../credentials.js")();
-var Robinhood = require('robinhood')(credentials, function() {
-    Robinhood.get_currency_pairs((err, response, body) => {
-        if (err) {
-            console.error(err);
-        } else {
-            console.log(body);
-        }
-    });
-});
-```
-
-### `get_crypto`
-
-Get cryptocurrency quote information from symbol
-
-```javascript
-var credentials = require("../credentials.js")();
-var Robinhood = require('robinhood')(credentials, function() {
-    Robinhood.get_crypto('DOGE', (err, response, body) => {
-        if (err) {
-            console.error(err);
-        } else {
-            console.log(body);
-        }
-    });
-});
-```
-
-`Documentation lacking sample response` **Feel like contributing? :)**
-
-# Contributors
-
-Alejandro U. Alvarez ([@aurbano](https://github.com/aurbano))
-------------------
-* Jesse Spencer ([@Jspenc72](https://github.com/jspenc72))
-* Justin Keller ([@nodesocket](https://github.com/nodesocket))
-* Wei-Sheng Su ([@ted7726](https://github.com/ted7726))
-* Dustin Moore ([@dustinmoorenet](https://github.com/dustinmoorenet))
-* Alex Ryan ([@ialexryan](https://github.com/ialexryan))
-* Ben Van Treese ([@vantreeseba](https://github.com/vantreeseba))
-* Zaheen ([@z123](https://github.com/z123))
-* Chris Busse ([@busse](https://github.com/busse))
-* Jason Truluck ([@jasontruluck](https://github.com/jasontruluck))
-* Matthew Herron ([@swimclan](https://github.com/swimclan))
-* Chris Dituri ([@cdituri](https://github.com/cdituri))
-* John Murphy ([@chiefsmurph](https://github.com/chiefsmurph))
-* Ryan Hendricks ([@ryanhendricks](https://github.com/ryanhendricks))
-* Patrick Michaelsen ([@prmichaelsen](https://github.com/prmichaelsen))
-* Joshua Wilborn ([@joshuajwilborn](https://github.com/joshuajwilborn))
-* Adrian Veliz ([@aveliz1999](https://github.com/aveliz1999))
-
-------------------
-
-# Related Projects
-
-* [robinhood-ruby](https://github.com/rememberlenny/robinhood-ruby) - RubyGem for interacting with Robinhood API
-* [robinhood Python](https://github.com/Jamonek/Robinhood) - Python Framework to make trades with Robinhood Private API
-
-------------------
-
->Even though this should be obvious: I am not affiliated in any way with Robinhood Financial LLC. I don't mean any harm or disruption in their service by providing this. Furthermore, I believe they are working on an amazing product, and hope that by publishing this NodeJS framework their users can benefit in even more ways from working with them.
-
-[![Analytics](https://ga-beacon.appspot.com/UA-3181088-16/robinhood/readme)](https://github.com/aurbano)
-
-
-## License
-[![FOSSA Status](https://app.fossa.io/api/projects/git%2Bgithub.com%2Faurbano%2Frobinhood-node.svg?type=large)](https://app.fossa.io/projects/git%2Bgithub.com%2Faurbano%2Frobinhood-node?ref=badge_large)
+There are two ways to launch your deep learning jobs with TonY:
+- Use a zipped Python virtual environment.
+- Use Docker container.
+
+### Use a zipped Python virtual environment
+
+The difference between this approach and the one with Docker is
+- You don't need to set up your Hadoop cluster with Docker support.
+- There is no requirement on a Docker image registry.
+
+As you know, nothing comes for free. If you don't want to bother setting your cluster with Docker support, you'd need to prepare a zipped virtual environment for your job and your cluster should have the same OS version as the computer which builds the Python virtual environment.
+
+#### Python virtual environment in a zip
+
+    $ unzip -Z1 my-venv.zip | head -n 10
+      Python/
+      Python/bin/
+      Python/bin/rst2xml.py
+      Python/bin/wheel
+      Python/bin/rst2html5.py
+      Python/bin/rst2odt.py
+      Python/bin/rst2s5.py
+      Python/bin/pip2.7
+      Python/bin/saved_model_cli
+      Python/bin/rst2pseudoxml.pyc
+
+#### TonY jar and tony.xml
+
+    MyJob/
+      > src/
+        > models/
+          mnist_distributed.py
+      tony.xml
+      tony-cli-0.4.7-all.jar
+      my-venv.zip # The additional file you need.
+
+A similar `tony.xml` but without Docker related configurations:
+
+    $ cat tony/tony.xml
+    <configuration>
+      <property>
+        <name>tony.worker.instances</name>
+        <value>4</value>
+      </property>
+      <property>
+        <name>tony.worker.memory</name>
+        <value>4g</value>
+      </property>
+      <property>
+        <name>tony.worker.gpus</name>
+        <value>1</value>
+      </property>
+      <property>
+        <name>tony.ps.memory</name>
+        <value>3g</value>
+      </property>
+    </configuration>
+
+Then you can launch your job:
+
+    $ java -cp "`hadoop classpath --glob`:MyJob/*:MyJob" \
+                com.linkedin.tony.cli.ClusterSubmitter \
+                -executes models/mnist_distributed.py \ # relative path to model program inside the src_dir
+                -task_params '--input_dir /path/to/hdfs/input --output_dir /path/to/hdfs/output \
+                -python_venv my-venv.zip \
+                -python_binary_path Python/bin/python \  # relative path to the Python binary inside the my-venv.zip
+                -src_dir src
+
+### Use a Docker container
+Note that this requires you have a properly configured Hadoop cluster with Docker support. Check this [documentation](https://hadoop.apache.org/docs/r2.9.1/hadoop-yarn/hadoop-yarn-site/DockerContainers.html) if you are unsure how to set it up. Assuming you have properly set up your Hadoop cluster with Docker container runtime, you should have already built a proper Docker image with required Hadoop configurations. The next thing you need is to install your Python dependencies inside your Docker image - TensorFlow or PyTorch.
+
+Below is a folder structure of what you need to launch the job:
+
+    MyJob/
+      > src/
+        > models/
+          mnist_distributed.py
+      tony.xml
+      tony-cli-0.4.7-all.jar
+
+The `src/` folder would contain all your training script. The `tony.xml` is used to config your training job. Specifically for using Docker as the container runtime, your configuration should be similar to something below:
+
+    $ cat MyJob/tony.xml
+    <configuration>
+      <property>
+        <name>tony.worker.instances</name>
+        <value>4</value>
+      </property>
+      <property>
+        <name>tony.worker.memory</name>
+        <value>4g</value>
+      </property>
+      <property>
+        <name>tony.worker.gpus</name>
+        <value>1</value>
+      </property>
+      <property>
+        <name>tony.ps.memory</name>
+        <value>3g</value>
+      </property>
+      <property>
+        <name>tony.docker.enabled</name>
+        <value>true</value>
+      </property>
+      <property>
+        <name>tony.docker.containers.image</name>
+        <value>YOUR_DOCKER_IMAGE_NAME</value>
+      </property>
+    </configuration>
+
+For a full list of configurations, please see the [wiki](https://github.com/linkedin/TonY/wiki/TonY-Configurations).
+
+Now you're ready to launch your job:
+
+    $ java -cp "`hadoop classpath --glob`:MyJob/*:MyJob/" \
+            com.linkedin.tony.cli.ClusterSubmitter \
+            -executes models/mnist_distributed.py \
+            -task_params '--input_dir /path/to/hdfs/input --output_dir /path/to/hdfs/output' \
+            -src_dir src \
+            -python_binary_path /home/user_name/python_virtual_env/bin/python
+
+## TonY arguments
+The command line arguments are as follows:
+
+| Name               | Required? | Example                                           | Meaning                                                                                                                                                                                                           |
+|--------------------|-----------|---------------------------------------------------|-------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
+| executes           | yes       | --executes model/mnist.py                         | Location to the entry point of your training code.                                                                                                                                                                |
+| src_dir            | yes       | --src src/                                        | Specifies the name of the root directory locally which contains all of your python model source code. This directory will be copied to all worker node.                                                           |
+| task_params        | no        | --input_dir /hdfs/input --output_dir /hdfs/output | The command line arguments which will be passed to your entry point                                                                                                                                               |
+| python_venv        | no        | --python_venv venv.zip                            | Local or remote Path to the *zipped* Python virtual environment, remote path like `--python_venv hdfs://nameservice01/user/tony/venv.zip`                                                                         |
+| python_binary_path | no        | --python_binary_path Python/bin/python            | Used together with python_venv, describes the relative path in your python virtual environment which contains the python binary, or an absolute path to use a python binary already installed on all worker nodes |
+| shell_env          | no        | --shell_env LD_LIBRARY_PATH=/usr/local/lib64/     | Specifies key-value pairs for environment variables which will be set in your python worker/ps processes.                                                                                                         |
+| conf_file          | no        | --conf_file tony-local.xml                        | Location of a TonY configuration file, also support remote path, like `--conf_file hdfs://nameservice01/user/tony/tony-remote.xml`                                                                                |
+| conf               | no        | --conf tony.application.security.enabled=false    | Override configurations from your configuration file via command line
+| sidecar_tensorboard_log_dir | no | --sidecar_tensorboard_log_dir /hdfs/path/tensorboard_log_dir | HDFS path to tensorboard log dir, it will enable sidecar tensorboard managed by TonY. More detailed example refers to tony-examples/mnist_tensorflow module                                          |
+
+## TonY configurations
+
+There are multiple ways to specify configurations for your TonY job. As above, you can create an XML file called `tony.xml`
+and add its parent directory to your java classpath.
+
+Alternatively, you can pass `-conf_file <name_of_conf_file>` to the java command line if you have a file not named `tony.xml`
+containing your configurations. (As before, the parent directory of this file must be added to the java classpath.)
+
+If you wish to override configurations from your configuration file via command line, you can do so by passing `-conf <tony.conf.key>=<tony.conf.value>` argument pairs on the command line.
+
+Please check our [wiki](https://github.com/linkedin/TonY/wiki/TonY-Configurations) for all TonY configurations and their default values.
+
+## TonY Examples
+
+Below are examples to run distributed deep learning jobs with TonY:
+- [Distributed MNIST with TensorFlow](https://github.com/linkedin/TonY/tree/master/tony-examples/mnist-tensorflow)
+- [Distributed MNIST with PyTorch](https://github.com/linkedin/TonY/tree/master/tony-examples/mnist-pytorch)
+- [Distributed MNIST with Horovod](https://github.com/linkedin/TonY/tree/master/tony-examples/horovod-on-tony)
+- [Linear regression with MXNet](https://github.com/linkedin/TonY/tree/master/tony-examples/linearregression-mxnet)
+- [TonY in Google Cloud Platform](https://github.com/linkedin/TonY/tree/master/tony-examples/tony-in-gcp)
+- [TonY in Azkaban video](https://youtu.be/DM89y8BGFaY)
+
+## More information
+
+For more information about TonY, check out the following:
+- [TonY presentation at DataWorks Summit '19 in Washington, D.C.](https://www.slideshare.net/ssuser72f42a/scaling-deep-learning-on-hadoop-at-linkedin)
+- [TonY OpML '19 paper](https://arxiv.org/abs/1904.01631)
+- [TonY LinkedIn Engineering blog post](https://engineering.linkedin.com/blog/2018/09/open-sourcing-tony--native-support-of-tensorflow-on-hadoop)
+
+
+## FAQ
+
+1. My tensorflow process hangs with
+    ```
+    2018-09-13 03:02:31.538790: E tensorflow/core/distributed_runtime/master.cc:272] CreateSession failed because worker /job:worker/replica:0/task:0 returned error: Unavailable: OS Error
+    INFO:tensorflow:An error was raised while a session was being created. This may be due to a preemption of a connected worker or parameter server. A new session will be created. Error: OS Error
+    INFO:tensorflow:Graph was finalized.
+    2018-09-13 03:03:33.792490: I tensorflow/core/distributed_runtime/master_session.cc:1150] Start master session ea811198d338cc1d with config:
+    INFO:tensorflow:Waiting for model to be ready.  Ready_for_local_init_op:  Variables not initialized: conv1/Variable, conv1/Variable_1, conv2/Variable, conv2/Variable_1, fc1/Variable, fc1/Variable_1, fc2/Variable, fc2/Variable_1, global_step, adam_optimizer/beta1_power, adam_optimizer/beta2_power, conv1/Variable/Adam, conv1/Variable/Adam_1, conv1/Variable_1/Adam, conv1/Variable_1/Adam_1, conv2/Variable/Adam, conv2/Variable/Adam_1, conv2/Variable_1/Adam, conv2/Variable_1/Adam_1, fc1/Variable/Adam, fc1/Variable/Adam_1, fc1/Variable_1/Adam, fc1/Variable_1/Adam_1, fc2/Variable/Adam, fc2/Variable/Adam_1, fc2/Variable_1/Adam, fc2/Variable_1/Adam_1, ready: None
+    ```
+    Why?
+
+    Try adding the path to your libjvm.so shared library to your LD_LIBRARY_PATH environment variable for your workers. See above for an example.
+
+2. How do I configure arbitrary TensorFlow job types?
+
+    Please see the [wiki](https://github.com/linkedin/TonY/wiki/TonY-Configurations#task-configuration) on TensorFlow task configuration for details.
+
+3. My tensorflow's partial workers hang when chief finished. Or evaluator hang when chief and workers finished.
+   
+   Please see the [PR#521](https://github.com/tony-framework/TonY/pull/621) and [PR#641](https://github.com/tony-framework/TonY/issues/641) on Tensorflow configuration to solve it.
