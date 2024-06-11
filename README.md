@@ -1,218 +1,134 @@
-# TonY
-[![CircleCI](https://circleci.com/gh/tony-framework/TonY/tree/master.svg?style=svg)](https://circleci.com/gh/tony-framework/TonY/tree/master)
-[![CII Best Practices](https://bestpractices.coreinfrastructure.org/projects/5080/badge)](https://bestpractices.coreinfrastructure.org/projects/5080)
+# 🎃 HacktoberFest Starter Project 🎃
 
-![tony-logo-small](https://user-images.githubusercontent.com/544734/57793050-45b3ff00-76f5-11e9-8cc0-8ebb830b6e78.png)
+** __Oct 24th, 2017 Update:__ THIS REPO IS TEMPORARILY __NOT MERGING NEW PRs__ until the CONTRIBUTORS.md file is sorted! Thanks for your patience! **
 
-TonY is a framework to _natively_ run deep learning jobs on [Apache Hadoop](http://hadoop.apache.org/).
-It currently supports [TensorFlow](https://github.com/tensorflow/tensorflow), [PyTorch](https://github.com/pytorch/pytorch), [MXNet](https://github.com/apache/incubator-mxnet) and [Horovod](https://github.com/horovod/horovod).
-TonY enables running either single node or distributed
-training as a Hadoop application. This native connector, together with other TonY features, aims to run
-machine learning jobs reliably and flexibly. For a quick overview of TonY and comparisons to other frameworks, please see
-[this presentation](https://www.slideshare.net/ssuser72f42a/scaling-deep-learning-on-hadoop-at-linkedin).
+Use this project to make your first contribution to an open source project on GitHub. Practice making your first pull request to a public repository before doing the real thing!
 
-## Compatibility Notes
+Celebrate [Hacktoberfest](https://hacktoberfest.digitalocean.com/) by getting involved in the open source community by completing some simple tasks in this project.
 
-TonY itself is compatible with [Hadoop 2.6.0](https://hadoop.apache.org/docs/r2.6.0/) (CDH5.11.0) and above. If you need GPU isolation from TonY, you need [Hadoop 2.10](https://hadoop.apache.org/docs/r2.10.0/) or higher for Hadoop 2, or [Hadoop 3.1.0](https://hortonworks.com/blog/gpus-support-in-apache-hadoop-3-1-yarn-hdp-3/) or higher for Hadoop 3.
+This repository is open to all members of the GitHub community. Any member may contribute to this project without being a collaborator.
 
-## Build
+[https://alicewonderland.github.io/hacktoberfest/](https://alicewonderland.github.io/hacktoberfest/)
 
-TonY is built using [Gradle](https://github.com/gradle/gradle). To build TonY, run:
+## What is Hacktoberfest?
+A month-long celebration from October 1st - 31st sponsored by [Digital Ocean](https://hacktoberfest.digitalocean.com/) and [GitHub](https://github.com/blog/2433-celebrate-open-source-this-october-with-hacktoberfest) to get people involved in [Open Source](https://github.com/open-source). Create your very first pull request to any public repository on GitHub and contribute to the open source developer community.
 
-    ./gradlew build
+[https://hacktoberfest.digitalocean.com/](https://hacktoberfest.digitalocean.com/)
 
-This will automatically run tests, if want to build without running tests, run:
+## How to contribute to this project
+Here are 3 quick and painless ways to contribute to this project:
 
-    ./gradlew build -x test
+* Add your name to the `CONTRIBUTORS.md` file
+* Add a profile page to the `profiles` directory
+* Create a simple "Hello, World" script in a language of your choice
 
-The jar required to run TonY will be located in `./tony-cli/build/libs/`.
+Choose one or all 3, make a pull request for your work and wait for it to be merged!
 
-## Usage
+## Getting started
+* Fork this repository (Click the Fork button in the top right of this page, click your Profile Image)
+* Clone your fork down to your local machine
 
-There are two ways to launch your deep learning jobs with TonY:
-- Use a zipped Python virtual environment.
-- Use Docker container.
+```markdown
+git clone https://github.com/your-username/hacktoberfest.git
+```
 
-### Use a zipped Python virtual environment
+* Create a branch
 
-The difference between this approach and the one with Docker is
-- You don't need to set up your Hadoop cluster with Docker support.
-- There is no requirement on a Docker image registry.
+```markdown
+git checkout -b branch-name
+```
 
-As you know, nothing comes for free. If you don't want to bother setting your cluster with Docker support, you'd need to prepare a zipped virtual environment for your job and your cluster should have the same OS version as the computer which builds the Python virtual environment.
+* Make your changes (choose from any task below)
+* Commit and push
 
-#### Python virtual environment in a zip
+```markdown
+git add .
+git commit -m 'Commit message'
+git push origin branch-name
+```
 
-    $ unzip -Z1 my-venv.zip | head -n 10
-      Python/
-      Python/bin/
-      Python/bin/rst2xml.py
-      Python/bin/wheel
-      Python/bin/rst2html5.py
-      Python/bin/rst2odt.py
-      Python/bin/rst2s5.py
-      Python/bin/pip2.7
-      Python/bin/saved_model_cli
-      Python/bin/rst2pseudoxml.pyc
+* Create a new pull request from your forked repository (Click the `New Pull Request` button located at the top of your repo)
+* Wait for your PR review and merge approval!
+* __Star this repository__ if you had fun!
 
-#### TonY jar and tony.xml
+## Choose from these tasks
+### 1. Add your name
+Add your name to the `CONTRIBUTORS.md` file using the below convention:
 
-    MyJob/
-      > src/
-        > models/
-          mnist_distributed.py
-      tony.xml
-      tony-cli-0.4.7-all.jar
-      my-venv.zip # The additional file you need.
+```markdown
+#### Name: [YOUR NAME](GitHub link)
+- Place: City, State, Country
+- Bio: Who are you?
+- GitHub: [GitHub account name](GitHub link)
+```
 
-A similar `tony.xml` but without Docker related configurations:
+### 2. Add a profile page
+Add a `Your_Name.md` file to the `profiles` directory. Use any combination of content and Markdown you'd like. Here is an example:
 
-    $ cat tony/tony.xml
-    <configuration>
-      <property>
-        <name>tony.worker.instances</name>
-        <value>4</value>
-      </property>
-      <property>
-        <name>tony.worker.memory</name>
-        <value>4g</value>
-      </property>
-      <property>
-        <name>tony.worker.gpus</name>
-        <value>1</value>
-      </property>
-      <property>
-        <name>tony.ps.memory</name>
-        <value>3g</value>
-      </property>
-    </configuration>
+```markdown
+# Your Name
 
-Then you can launch your job:
+### Location
 
-    $ java -cp "`hadoop classpath --glob`:MyJob/*:MyJob" \
-                com.linkedin.tony.cli.ClusterSubmitter \
-                -executes models/mnist_distributed.py \ # relative path to model program inside the src_dir
-                -task_params '--input_dir /path/to/hdfs/input --output_dir /path/to/hdfs/output \
-                -python_venv my-venv.zip \
-                -python_binary_path Python/bin/python \  # relative path to the Python binary inside the my-venv.zip
-                -src_dir src
+Your City/Country
 
-### Use a Docker container
-Note that this requires you have a properly configured Hadoop cluster with Docker support. Check this [documentation](https://hadoop.apache.org/docs/r2.9.1/hadoop-yarn/hadoop-yarn-site/DockerContainers.html) if you are unsure how to set it up. Assuming you have properly set up your Hadoop cluster with Docker container runtime, you should have already built a proper Docker image with required Hadoop configurations. The next thing you need is to install your Python dependencies inside your Docker image - TensorFlow or PyTorch.
+### Academics
 
-Below is a folder structure of what you need to launch the job:
+Your School
 
-    MyJob/
-      > src/
-        > models/
-          mnist_distributed.py
-      tony.xml
-      tony-cli-0.4.7-all.jar
+### Interests
 
-The `src/` folder would contain all your training script. The `tony.xml` is used to config your training job. Specifically for using Docker as the container runtime, your configuration should be similar to something below:
+- Some Things You Like
 
-    $ cat MyJob/tony.xml
-    <configuration>
-      <property>
-        <name>tony.worker.instances</name>
-        <value>4</value>
-      </property>
-      <property>
-        <name>tony.worker.memory</name>
-        <value>4g</value>
-      </property>
-      <property>
-        <name>tony.worker.gpus</name>
-        <value>1</value>
-      </property>
-      <property>
-        <name>tony.ps.memory</name>
-        <value>3g</value>
-      </property>
-      <property>
-        <name>tony.docker.enabled</name>
-        <value>true</value>
-      </property>
-      <property>
-        <name>tony.docker.containers.image</name>
-        <value>YOUR_DOCKER_IMAGE_NAME</value>
-      </property>
-    </configuration>
+### Development
 
-For a full list of configurations, please see the [wiki](https://github.com/linkedin/TonY/wiki/TonY-Configurations).
+- Inventor of the My Pillow
 
-Now you're ready to launch your job:
+### Projects
 
-    $ java -cp "`hadoop classpath --glob`:MyJob/*:MyJob/" \
-            com.linkedin.tony.cli.ClusterSubmitter \
-            -executes models/mnist_distributed.py \
-            -task_params '--input_dir /path/to/hdfs/input --output_dir /path/to/hdfs/output' \
-            -src_dir src \
-            -python_binary_path /home/user_name/python_virtual_env/bin/python
+- [My Project](GitHub Link) Short Description
 
-## TonY arguments
-The command line arguments are as follows:
+### Profile Link
 
-| Name               | Required? | Example                                           | Meaning                                                                                                                                                                                                           |
-|--------------------|-----------|---------------------------------------------------|-------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
-| executes           | yes       | --executes model/mnist.py                         | Location to the entry point of your training code.                                                                                                                                                                |
-| src_dir            | yes       | --src src/                                        | Specifies the name of the root directory locally which contains all of your python model source code. This directory will be copied to all worker node.                                                           |
-| task_params        | no        | --input_dir /hdfs/input --output_dir /hdfs/output | The command line arguments which will be passed to your entry point                                                                                                                                               |
-| python_venv        | no        | --python_venv venv.zip                            | Local or remote Path to the *zipped* Python virtual environment, remote path like `--python_venv hdfs://nameservice01/user/tony/venv.zip`                                                                         |
-| python_binary_path | no        | --python_binary_path Python/bin/python            | Used together with python_venv, describes the relative path in your python virtual environment which contains the python binary, or an absolute path to use a python binary already installed on all worker nodes |
-| shell_env          | no        | --shell_env LD_LIBRARY_PATH=/usr/local/lib64/     | Specifies key-value pairs for environment variables which will be set in your python worker/ps processes.                                                                                                         |
-| conf_file          | no        | --conf_file tony-local.xml                        | Location of a TonY configuration file, also support remote path, like `--conf_file hdfs://nameservice01/user/tony/tony-remote.xml`                                                                                |
-| conf               | no        | --conf tony.application.security.enabled=false    | Override configurations from your configuration file via command line
-| sidecar_tensorboard_log_dir | no | --sidecar_tensorboard_log_dir /hdfs/path/tensorboard_log_dir | HDFS path to tensorboard log dir, it will enable sidecar tensorboard managed by TonY. More detailed example refers to tony-examples/mnist_tensorflow module                                          |
+[Your Name](GitHub Link)
+```
 
-## TonY configurations
+### 3. Create a `Hello, World!` Script
+Add a `hello_world_yourusername.xx` script to the `scripts` directory in any language of your choice! Here is an example:
 
-There are multiple ways to specify configurations for your TonY job. As above, you can create an XML file called `tony.xml`
-and add its parent directory to your java classpath.
+```Javascript
+// LANGUAGE: Javascript
+// ENV: Node.js
+// AUTHOR: Alice Chuang
+// GITHUB: https://github.com/AliceWonderland
 
-Alternatively, you can pass `-conf_file <name_of_conf_file>` to the java command line if you have a file not named `tony.xml`
-containing your configurations. (As before, the parent directory of this file must be added to the java classpath.)
+console.log('Hello, World!');
+```
 
-If you wish to override configurations from your configuration file via command line, you can do so by passing `-conf <tony.conf.key>=<tony.conf.value>` argument pairs on the command line.
+Name the file `hello_world_yourusername.xx`. e.g., `hello_world_alicewonderland.js` or `hello_world_alicewonderland.py`.
 
-Please check our [wiki](https://github.com/linkedin/TonY/wiki/TonY-Configurations) for all TonY configurations and their default values.
+Don't forget to include the comments as seen above. Feel free to include additional information about the language you choose in your comments too! Like a link to a helpful introduction or tutorial. 
 
-## TonY Examples
+Here is my `hello_world` example: [hello_world_alicewonderland.js](https://github.com/AliceWonderland/hacktoberfest/blob/master/scripts/hello_world_alicewonderland.js)
 
-Below are examples to run distributed deep learning jobs with TonY:
-- [Distributed MNIST with TensorFlow](https://github.com/linkedin/TonY/tree/master/tony-examples/mnist-tensorflow)
-- [Distributed MNIST with PyTorch](https://github.com/linkedin/TonY/tree/master/tony-examples/mnist-pytorch)
-- [Distributed MNIST with Horovod](https://github.com/linkedin/TonY/tree/master/tony-examples/horovod-on-tony)
-- [Linear regression with MXNet](https://github.com/linkedin/TonY/tree/master/tony-examples/linearregression-mxnet)
-- [TonY in Google Cloud Platform](https://github.com/linkedin/TonY/tree/master/tony-examples/tony-in-gcp)
-- [TonY in Azkaban video](https://youtu.be/DM89y8BGFaY)
+## BONUS!
+* See profiles submitted by fellow coders from around the globe ... from Kathmandu to Copenhagen.
+* Discover some obscure to new and trending languages ... from BrainFuck to Groovy.
+* Check out some very creative ways to print out a "Hello, World!" string.
 
-## More information
+## Reference links
+Here is a great tutorial for creating your first pull request by [Roshan Jossey](https://github.com/Roshanjossey):
+[https://github.com/Roshanjossey/first-contributions](https://github.com/Roshanjossey/first-contributions)
 
-For more information about TonY, check out the following:
-- [TonY presentation at DataWorks Summit '19 in Washington, D.C.](https://www.slideshare.net/ssuser72f42a/scaling-deep-learning-on-hadoop-at-linkedin)
-- [TonY OpML '19 paper](https://arxiv.org/abs/1904.01631)
-- [TonY LinkedIn Engineering blog post](https://engineering.linkedin.com/blog/2018/09/open-sourcing-tony--native-support-of-tensorflow-on-hadoop)
+Managing your Forked Repo: [https://help.github.com/articles/fork-a-repo/](https://help.github.com/articles/fork-a-repo/)
 
+Syncing a Fork: [https://help.github.com/articles/syncing-a-fork/](https://help.github.com/articles/syncing-a-fork/)
 
-## FAQ
+Keep Your Fork Synced: [https://gist.github.com/CristinaSolana/1885435](https://gist.github.com/CristinaSolana/1885435)
 
-1. My tensorflow process hangs with
-    ```
-    2018-09-13 03:02:31.538790: E tensorflow/core/distributed_runtime/master.cc:272] CreateSession failed because worker /job:worker/replica:0/task:0 returned error: Unavailable: OS Error
-    INFO:tensorflow:An error was raised while a session was being created. This may be due to a preemption of a connected worker or parameter server. A new session will be created. Error: OS Error
-    INFO:tensorflow:Graph was finalized.
-    2018-09-13 03:03:33.792490: I tensorflow/core/distributed_runtime/master_session.cc:1150] Start master session ea811198d338cc1d with config:
-    INFO:tensorflow:Waiting for model to be ready.  Ready_for_local_init_op:  Variables not initialized: conv1/Variable, conv1/Variable_1, conv2/Variable, conv2/Variable_1, fc1/Variable, fc1/Variable_1, fc2/Variable, fc2/Variable_1, global_step, adam_optimizer/beta1_power, adam_optimizer/beta2_power, conv1/Variable/Adam, conv1/Variable/Adam_1, conv1/Variable_1/Adam, conv1/Variable_1/Adam_1, conv2/Variable/Adam, conv2/Variable/Adam_1, conv2/Variable_1/Adam, conv2/Variable_1/Adam_1, fc1/Variable/Adam, fc1/Variable/Adam_1, fc1/Variable_1/Adam, fc1/Variable_1/Adam_1, fc2/Variable/Adam, fc2/Variable/Adam_1, fc2/Variable_1/Adam, fc2/Variable_1/Adam_1, ready: None
-    ```
-    Why?
+Checkout this list for README examples - Awesome README [![Awesome](https://cdn.rawgit.com/sindresorhus/awesome/d7305f38d29fed78fa85652e3a63e154dd8e8829/media/badge.svg)](https://github.com/sindresorhus/awesome)
 
-    Try adding the path to your libjvm.so shared library to your LD_LIBRARY_PATH environment variable for your workers. See above for an example.
+Github-Flavored Markdown [https://guides.github.com/features/mastering-markdown/](https://guides.github.com/features/mastering-markdown/)
 
-2. How do I configure arbitrary TensorFlow job types?
-
-    Please see the [wiki](https://github.com/linkedin/TonY/wiki/TonY-Configurations#task-configuration) on TensorFlow task configuration for details.
-
-3. My tensorflow's partial workers hang when chief finished. Or evaluator hang when chief and workers finished.
-   
-   Please see the [PR#521](https://github.com/tony-framework/TonY/pull/621) and [PR#641](https://github.com/tony-framework/TonY/issues/641) on Tensorflow configuration to solve it.
+## Additional references added by contributors
+GitHub license explained [https://choosealicense.com](https://choosealicense.com)
