@@ -1,218 +1,68 @@
-# TonY
-[![CircleCI](https://circleci.com/gh/tony-framework/TonY/tree/master.svg?style=svg)](https://circleci.com/gh/tony-framework/TonY/tree/master)
-[![CII Best Practices](https://bestpractices.coreinfrastructure.org/projects/5080/badge)](https://bestpractices.coreinfrastructure.org/projects/5080)
+# SameBoy
 
-![tony-logo-small](https://user-images.githubusercontent.com/544734/57793050-45b3ff00-76f5-11e9-8cc0-8ebb830b6e78.png)
+SameBoy is an open source Game Boy (DMG) and Game Boy Color (CGB) emulator, written in portable C. It has a native Cocoa frontend for macOS, an SDL frontend for other operating systems, and a libretro core. It also includes a text-based debugger with an expression evaluator. Visit [the website](https://sameboy.github.io/).
 
-TonY is a framework to _natively_ run deep learning jobs on [Apache Hadoop](http://hadoop.apache.org/).
-It currently supports [TensorFlow](https://github.com/tensorflow/tensorflow), [PyTorch](https://github.com/pytorch/pytorch), [MXNet](https://github.com/apache/incubator-mxnet) and [Horovod](https://github.com/horovod/horovod).
-TonY enables running either single node or distributed
-training as a Hadoop application. This native connector, together with other TonY features, aims to run
-machine learning jobs reliably and flexibly. For a quick overview of TonY and comparisons to other frameworks, please see
-[this presentation](https://www.slideshare.net/ssuser72f42a/scaling-deep-learning-on-hadoop-at-linkedin).
+## Features
+Features common to both Cocoa and SDL versions:
+ * Supports Game Boy (DMG) and Game Boy Color (CGB) emulation
+ * Lets you choose the model you want to emulate regardless of ROM
+ * High quality 96KHz audio
+ * Battery save support
+ * Save states
+ * Includes open source DMG and CGB boot ROMs:
+   * Complete support for (and documentation of) *all* game-specific palettes in the CGB boot ROM, for accurate emulation of Game Boy games on a Game Boy Color
+   * Supports manual palette selection with key combinations, with 4 additional new palettes (A + B + direction)
+   * Supports palette selection in a CGB game, forcing it to run in 'paletted' DMG mode, if ROM allows doing so.
+   * Support for games with a non-Nintendo logo in the header
+   * No long animation in the DMG boot
+ * Advanced text-based debugger with an expression evaluator, disassembler, conditional breakpoints, conditional watchpoints, backtracing and other features
+ * Extremely high accuracy
+ * Emulates [PCM_12 and PCM_34 registers](https://github.com/LIJI32/GBVisualizer)
+ * T-cycle accurate emulation of LCD timing effects, supporting the Demotronic trick, Prehistorik Man, [GBVideoPlayer](https://github.com/LIJI32/GBVideoPlayer) and other tech demos
+ * Real time clock emulation
+ * Retina/High DPI display support, allowing a wider range of scaling factors without artifacts
+ * Optional frame blending (Requires OpenGL 3.2 or later)
+ * Several [scaling algorithms](https://sameboy.github.io/scaling/) (Including exclusive algorithms like OmniScale and Anti-aliased Scale2x; Requires OpenGL 3.2 or later or Metal)
 
-## Compatibility Notes
+Features currently supported only with the Cocoa version:
+ * Native Cocoa interface, with support for all system-wide features, such as drag-and-drop and smart titlebars
+ * Game Boy Camera support
+ 
+[Read more](https://sameboy.github.io/features/).
 
-TonY itself is compatible with [Hadoop 2.6.0](https://hadoop.apache.org/docs/r2.6.0/) (CDH5.11.0) and above. If you need GPU isolation from TonY, you need [Hadoop 2.10](https://hadoop.apache.org/docs/r2.10.0/) or higher for Hadoop 2, or [Hadoop 3.1.0](https://hortonworks.com/blog/gpus-support-in-apache-hadoop-3-1-yarn-hdp-3/) or higher for Hadoop 3.
+## Compatibility
+SameBoy passes all of [blargg's test ROMs](http://gbdev.gg8.se/wiki/articles/Test_ROMs#Blargg.27s_tests), all of [mooneye-gb's](https://github.com/Gekkio/mooneye-gb) tests (Some tests require the original boot ROMs), and all of [Wilbert Pol's tests](https://github.com/wilbertpol/mooneye-gb/tree/master/tests/acceptance). SameBoy should work with most games and demos, please [report](https://github.com/LIJI32/SameBoy/issues/new) any broken ROM. The latest results for SameBoy's automatic tester are available [here](https://sameboy.github.io/automation/).
 
-## Build
+## Contributing
+SameBoy is an open-source project licensed under the Expat license (with an additional exception for the iOS folder), and you're welcome to contribute by creating issues, implementing new features, improving emulation accuracy and fixing existing open issues. You can read the [contribution guidelines](CONTRIBUTING.md) to make sure your contributions are as effective as possible.
 
-TonY is built using [Gradle](https://github.com/gradle/gradle). To build TonY, run:
+## Compilation
+SameBoy requires the following tools and libraries to build:
+ * clang (Recommended; required for macOS) or GCC
+ * make
+ * macOS Cocoa frontend: macOS SDK and Xcode (For command line tools and ibtool)
+ * SDL frontend: libsdl2
+ * [rgbds](https://github.com/gbdev/rgbds/releases/), for boot ROM compilation
+ * [cppp](https://github.com/BR903/cppp), for cleaning up headers when compiling SameBoy as a library
 
-    ./gradlew build
+On Windows, SameBoy also requires:
+ * Visual Studio (For headers, etc.)
+ * [GnuWin](http://gnuwin32.sourceforge.net/)
+ * Running vcvars64 before running make. Make sure all required tools and libraries are in %PATH% and %lib%, respectively. (see [Build FAQ](https://github.com/LIJI32/SameBoy/blob/master/build-faq.md) for more details on Windows compilation)
 
-This will automatically run tests, if want to build without running tests, run:
+To compile, simply run `make`. The targets are:
+ * `cocoa` (Default for macOS)
+ * `sdl` (Default for everything else)
+ * `lib` (Creates libsameboy.o and libsameboy.a for statically linking SameBoy, as well as a headers directory with corresponding headers; currently not supported on Windows due to linker limitations)
+ * `ios` (Plain iOS .app bundle), `ios-ipa` (iOS IPA archive for side-loading), `ios-deb` (iOS deb package for jailbroken devices)
+ * `libretro`
+ * `bootroms`
+ * `tester` 
 
-    ./gradlew build -x test
+You may also specify `CONF=debug` (default), `CONF=release`, `CONF=native_release` or `CONF=fat_release`  to control optimization, symbols and multi-architectures. `native_release` is faster than `release`, but is optimized to the host's CPU and therefore is not portable. `fat_release` is exclusive to macOS and builds x86-64 and ARM64 fat binaries; this requires using a recent enough `clang` and macOS SDK using `xcode-select`, or setting them explicitly with `CC=` and `SYSROOT=`, respectively. All other configurations will build to your host architecture, except for the iOS targets. You may set `BOOTROMS_DIR=...` to a directory containing precompiled boot ROM files, otherwise the build system will compile and use SameBoy's own boot ROMs.
 
-The jar required to run TonY will be located in `./tony-cli/build/libs/`.
+The SDL port will look for resource files with a path relative to executable and inside the directory specified by the `DATA_DIR` variable. If you are packaging SameBoy, you may wish to override this by setting the `DATA_DIR` variable during compilation to the target path of the directory containing all files (apart from the executable, that's not necessary) from the `build/bin/SDL` directory in the source tree. Make sure the variable ends with a `/` character. On FreeDesktop environments, `DATA_DIR` will default to `/usr/local/share/sameboy/`. `PREFIX` and `DESTDIR` follow their standard usage and default to an empty string an `/usr/local`, respectively
 
-## Usage
+Linux, BSD, and other FreeDesktop users can run `sudo make install` to install SameBoy as both a GUI app and a command line tool.
 
-There are two ways to launch your deep learning jobs with TonY:
-- Use a zipped Python virtual environment.
-- Use Docker container.
-
-### Use a zipped Python virtual environment
-
-The difference between this approach and the one with Docker is
-- You don't need to set up your Hadoop cluster with Docker support.
-- There is no requirement on a Docker image registry.
-
-As you know, nothing comes for free. If you don't want to bother setting your cluster with Docker support, you'd need to prepare a zipped virtual environment for your job and your cluster should have the same OS version as the computer which builds the Python virtual environment.
-
-#### Python virtual environment in a zip
-
-    $ unzip -Z1 my-venv.zip | head -n 10
-      Python/
-      Python/bin/
-      Python/bin/rst2xml.py
-      Python/bin/wheel
-      Python/bin/rst2html5.py
-      Python/bin/rst2odt.py
-      Python/bin/rst2s5.py
-      Python/bin/pip2.7
-      Python/bin/saved_model_cli
-      Python/bin/rst2pseudoxml.pyc
-
-#### TonY jar and tony.xml
-
-    MyJob/
-      > src/
-        > models/
-          mnist_distributed.py
-      tony.xml
-      tony-cli-0.4.7-all.jar
-      my-venv.zip # The additional file you need.
-
-A similar `tony.xml` but without Docker related configurations:
-
-    $ cat tony/tony.xml
-    <configuration>
-      <property>
-        <name>tony.worker.instances</name>
-        <value>4</value>
-      </property>
-      <property>
-        <name>tony.worker.memory</name>
-        <value>4g</value>
-      </property>
-      <property>
-        <name>tony.worker.gpus</name>
-        <value>1</value>
-      </property>
-      <property>
-        <name>tony.ps.memory</name>
-        <value>3g</value>
-      </property>
-    </configuration>
-
-Then you can launch your job:
-
-    $ java -cp "`hadoop classpath --glob`:MyJob/*:MyJob" \
-                com.linkedin.tony.cli.ClusterSubmitter \
-                -executes models/mnist_distributed.py \ # relative path to model program inside the src_dir
-                -task_params '--input_dir /path/to/hdfs/input --output_dir /path/to/hdfs/output \
-                -python_venv my-venv.zip \
-                -python_binary_path Python/bin/python \  # relative path to the Python binary inside the my-venv.zip
-                -src_dir src
-
-### Use a Docker container
-Note that this requires you have a properly configured Hadoop cluster with Docker support. Check this [documentation](https://hadoop.apache.org/docs/r2.9.1/hadoop-yarn/hadoop-yarn-site/DockerContainers.html) if you are unsure how to set it up. Assuming you have properly set up your Hadoop cluster with Docker container runtime, you should have already built a proper Docker image with required Hadoop configurations. The next thing you need is to install your Python dependencies inside your Docker image - TensorFlow or PyTorch.
-
-Below is a folder structure of what you need to launch the job:
-
-    MyJob/
-      > src/
-        > models/
-          mnist_distributed.py
-      tony.xml
-      tony-cli-0.4.7-all.jar
-
-The `src/` folder would contain all your training script. The `tony.xml` is used to config your training job. Specifically for using Docker as the container runtime, your configuration should be similar to something below:
-
-    $ cat MyJob/tony.xml
-    <configuration>
-      <property>
-        <name>tony.worker.instances</name>
-        <value>4</value>
-      </property>
-      <property>
-        <name>tony.worker.memory</name>
-        <value>4g</value>
-      </property>
-      <property>
-        <name>tony.worker.gpus</name>
-        <value>1</value>
-      </property>
-      <property>
-        <name>tony.ps.memory</name>
-        <value>3g</value>
-      </property>
-      <property>
-        <name>tony.docker.enabled</name>
-        <value>true</value>
-      </property>
-      <property>
-        <name>tony.docker.containers.image</name>
-        <value>YOUR_DOCKER_IMAGE_NAME</value>
-      </property>
-    </configuration>
-
-For a full list of configurations, please see the [wiki](https://github.com/linkedin/TonY/wiki/TonY-Configurations).
-
-Now you're ready to launch your job:
-
-    $ java -cp "`hadoop classpath --glob`:MyJob/*:MyJob/" \
-            com.linkedin.tony.cli.ClusterSubmitter \
-            -executes models/mnist_distributed.py \
-            -task_params '--input_dir /path/to/hdfs/input --output_dir /path/to/hdfs/output' \
-            -src_dir src \
-            -python_binary_path /home/user_name/python_virtual_env/bin/python
-
-## TonY arguments
-The command line arguments are as follows:
-
-| Name               | Required? | Example                                           | Meaning                                                                                                                                                                                                           |
-|--------------------|-----------|---------------------------------------------------|-------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
-| executes           | yes       | --executes model/mnist.py                         | Location to the entry point of your training code.                                                                                                                                                                |
-| src_dir            | yes       | --src src/                                        | Specifies the name of the root directory locally which contains all of your python model source code. This directory will be copied to all worker node.                                                           |
-| task_params        | no        | --input_dir /hdfs/input --output_dir /hdfs/output | The command line arguments which will be passed to your entry point                                                                                                                                               |
-| python_venv        | no        | --python_venv venv.zip                            | Local or remote Path to the *zipped* Python virtual environment, remote path like `--python_venv hdfs://nameservice01/user/tony/venv.zip`                                                                         |
-| python_binary_path | no        | --python_binary_path Python/bin/python            | Used together with python_venv, describes the relative path in your python virtual environment which contains the python binary, or an absolute path to use a python binary already installed on all worker nodes |
-| shell_env          | no        | --shell_env LD_LIBRARY_PATH=/usr/local/lib64/     | Specifies key-value pairs for environment variables which will be set in your python worker/ps processes.                                                                                                         |
-| conf_file          | no        | --conf_file tony-local.xml                        | Location of a TonY configuration file, also support remote path, like `--conf_file hdfs://nameservice01/user/tony/tony-remote.xml`                                                                                |
-| conf               | no        | --conf tony.application.security.enabled=false    | Override configurations from your configuration file via command line
-| sidecar_tensorboard_log_dir | no | --sidecar_tensorboard_log_dir /hdfs/path/tensorboard_log_dir | HDFS path to tensorboard log dir, it will enable sidecar tensorboard managed by TonY. More detailed example refers to tony-examples/mnist_tensorflow module                                          |
-
-## TonY configurations
-
-There are multiple ways to specify configurations for your TonY job. As above, you can create an XML file called `tony.xml`
-and add its parent directory to your java classpath.
-
-Alternatively, you can pass `-conf_file <name_of_conf_file>` to the java command line if you have a file not named `tony.xml`
-containing your configurations. (As before, the parent directory of this file must be added to the java classpath.)
-
-If you wish to override configurations from your configuration file via command line, you can do so by passing `-conf <tony.conf.key>=<tony.conf.value>` argument pairs on the command line.
-
-Please check our [wiki](https://github.com/linkedin/TonY/wiki/TonY-Configurations) for all TonY configurations and their default values.
-
-## TonY Examples
-
-Below are examples to run distributed deep learning jobs with TonY:
-- [Distributed MNIST with TensorFlow](https://github.com/linkedin/TonY/tree/master/tony-examples/mnist-tensorflow)
-- [Distributed MNIST with PyTorch](https://github.com/linkedin/TonY/tree/master/tony-examples/mnist-pytorch)
-- [Distributed MNIST with Horovod](https://github.com/linkedin/TonY/tree/master/tony-examples/horovod-on-tony)
-- [Linear regression with MXNet](https://github.com/linkedin/TonY/tree/master/tony-examples/linearregression-mxnet)
-- [TonY in Google Cloud Platform](https://github.com/linkedin/TonY/tree/master/tony-examples/tony-in-gcp)
-- [TonY in Azkaban video](https://youtu.be/DM89y8BGFaY)
-
-## More information
-
-For more information about TonY, check out the following:
-- [TonY presentation at DataWorks Summit '19 in Washington, D.C.](https://www.slideshare.net/ssuser72f42a/scaling-deep-learning-on-hadoop-at-linkedin)
-- [TonY OpML '19 paper](https://arxiv.org/abs/1904.01631)
-- [TonY LinkedIn Engineering blog post](https://engineering.linkedin.com/blog/2018/09/open-sourcing-tony--native-support-of-tensorflow-on-hadoop)
-
-
-## FAQ
-
-1. My tensorflow process hangs with
-    ```
-    2018-09-13 03:02:31.538790: E tensorflow/core/distributed_runtime/master.cc:272] CreateSession failed because worker /job:worker/replica:0/task:0 returned error: Unavailable: OS Error
-    INFO:tensorflow:An error was raised while a session was being created. This may be due to a preemption of a connected worker or parameter server. A new session will be created. Error: OS Error
-    INFO:tensorflow:Graph was finalized.
-    2018-09-13 03:03:33.792490: I tensorflow/core/distributed_runtime/master_session.cc:1150] Start master session ea811198d338cc1d with config:
-    INFO:tensorflow:Waiting for model to be ready.  Ready_for_local_init_op:  Variables not initialized: conv1/Variable, conv1/Variable_1, conv2/Variable, conv2/Variable_1, fc1/Variable, fc1/Variable_1, fc2/Variable, fc2/Variable_1, global_step, adam_optimizer/beta1_power, adam_optimizer/beta2_power, conv1/Variable/Adam, conv1/Variable/Adam_1, conv1/Variable_1/Adam, conv1/Variable_1/Adam_1, conv2/Variable/Adam, conv2/Variable/Adam_1, conv2/Variable_1/Adam, conv2/Variable_1/Adam_1, fc1/Variable/Adam, fc1/Variable/Adam_1, fc1/Variable_1/Adam, fc1/Variable_1/Adam_1, fc2/Variable/Adam, fc2/Variable/Adam_1, fc2/Variable_1/Adam, fc2/Variable_1/Adam_1, ready: None
-    ```
-    Why?
-
-    Try adding the path to your libjvm.so shared library to your LD_LIBRARY_PATH environment variable for your workers. See above for an example.
-
-2. How do I configure arbitrary TensorFlow job types?
-
-    Please see the [wiki](https://github.com/linkedin/TonY/wiki/TonY-Configurations#task-configuration) on TensorFlow task configuration for details.
-
-3. My tensorflow's partial workers hang when chief finished. Or evaluator hang when chief and workers finished.
-   
-   Please see the [PR#521](https://github.com/tony-framework/TonY/pull/621) and [PR#641](https://github.com/tony-framework/TonY/issues/641) on Tensorflow configuration to solve it.
+SameBoy is compiled and tested on macOS, Ubuntu and 64-bit Windows 10.
